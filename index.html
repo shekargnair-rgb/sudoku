@@ -643,12 +643,6 @@
     }
 
     function triggerImageUpload() {
-      const key = (apiKeyInput.value.trim()) || localStorage.getItem('anthropicApiKey') || '';
-      if (!key) {
-        setStatus('Enter your Anthropic API key above before importing a photo', 'error');
-        apiKeyInput.focus();
-        return;
-      }
       document.getElementById('imageInput').click();
     }
 
