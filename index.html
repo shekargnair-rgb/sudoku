@@ -184,6 +184,13 @@
     }
     .btn-photo:hover { background: #323244; color: #e8e8f0; }
 
+    .btn-set-puzzle {
+      background: linear-gradient(135deg, #065f46, #047857);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(6, 95, 70, 0.3);
+    }
+    .btn-set-puzzle:hover { opacity: 0.9; }
+
     /* ── Hint explanation panel ─────────────────────────────────────────── */
     .hint-panel {
       display: none;
@@ -268,11 +275,12 @@
     <div class="board" id="board"></div>
 
     <div class="controls">
-      <button class="btn-example" onclick="loadExample()">Load Example</button>
-      <button class="btn-photo"   onclick="triggerImageUpload()">&#128247; Import Photo</button>
-      <button class="btn-clear"   onclick="clearBoard()">Clear</button>
-      <button class="btn-hint"    onclick="applyNextStep()">Next Step</button>
-      <button class="btn-solve"   onclick="solve()">Solve</button>
+      <button class="btn-example"    onclick="loadExample()">Load Example</button>
+      <button class="btn-photo"      onclick="triggerImageUpload()">&#128247; Import Photo</button>
+      <button class="btn-set-puzzle" onclick="setPuzzle()">&#128274; Set as Puzzle</button>
+      <button class="btn-clear"      onclick="clearBoard()">Clear</button>
+      <button class="btn-hint"       onclick="applyNextStep()">Next Step</button>
+      <button class="btn-solve"      onclick="solve()">Solve</button>
     </div>
 
     <!-- hidden file input for image upload -->
@@ -503,7 +511,47 @@
       setStatus(`Solved in ${elapsed} ms`, 'success');
     }
 
+    // ── Set as Puzzle ────────────────────────────────────────────────────────
+
+    function setPuzzle() {
+      const grid = getGrid();
+      const conflict = validateInput(grid);
+      if (conflict !== -1) {
+        cells[conflict].classList.add('error');
+        setStatus('Fix conflicts before setting puzzle', 'error');
+        return;
+      }
+      let count = 0;
+      cells.forEach(c => {
+        if (c.value && !c.classList.contains('given')) {
+          c.classList.remove('candidate', 'unique', 'hint', 'solved', 'error');
+          c.classList.add('given');
+          count++;
+        }
+      });
+      if (count === 0) {
+        setStatus('Fill in your puzzle clues first, then click Set as Puzzle', '');
+        return;
+      }
+      hideHint();
+      setStatus(`Puzzle set — ${count} clues locked. Now solve it!`, 'success');
+    }
+
     // ── Next Step ────────────────────────────────────────────────────────────
+
+    // Score a cell by how many of its peers (row + col + box) are already filled.
+    // Higher = more constrained = more obvious move to a human.
+    function peersFilled(grid, pos) {
+      const row = Math.floor(pos / 9), col = pos % 9;
+      const br = Math.floor(row / 3) * 3, bc = Math.floor(col / 3) * 3;
+      let count = 0;
+      for (let i = 0; i < 9; i++) {
+        if (grid[row * 9 + i] !== 0) count++;
+        if (grid[i * 9 + col] !== 0) count++;
+        if (grid[(br + Math.floor(i / 3)) * 9 + bc + (i % 3)] !== 0) count++;
+      }
+      return count;
+    }
 
     function findNextStep() {
       const grid = getGrid();
@@ -511,105 +559,96 @@
       if (validateInput(grid) !== -1) return { error: 'Fix conflicts before stepping' };
       if (!grid.includes(0)) return { done: true };
 
-      // 1. Naked Single — only one candidate in a cell
+      // 1. Collect ALL naked singles, pick the most constrained one
+      const nakedSingles = [];
       for (let pos = 0; pos < 81; pos++) {
         if (grid[pos] !== 0) continue;
         const cands = getCandidates(grid, pos);
         if (cands.length === 0) return { error: 'No solution exists for this puzzle' };
-        if (cands.length === 1) {
-          const row = Math.floor(pos / 9), col = pos % 9;
-          const blocked = [1,2,3,4,5,6,7,8,9].filter(n => n !== cands[0]).join(', ');
-          return {
-            pos, value: cands[0],
-            technique: 'Naked Single',
-            explanation: `Cell R${row+1}C${col+1} can only be <b>${cands[0]}</b>. ` +
-              `Every other digit (${blocked}) already appears in its row, column, or 3×3 box.`
-          };
-        }
+        if (cands.length === 1) nakedSingles.push({ pos, value: cands[0] });
+      }
+      if (nakedSingles.length > 0) {
+        nakedSingles.sort((a, b) => peersFilled(grid, b.pos) - peersFilled(grid, a.pos));
+        const { pos, value } = nakedSingles[0];
+        const row = Math.floor(pos / 9), col = pos % 9;
+        const blocked = [1,2,3,4,5,6,7,8,9].filter(n => n !== value).join(', ');
+        return {
+          pos, value, technique: 'Naked Single',
+          explanation: `Cell R${row+1}C${col+1} can only be <b>${value}</b>. ` +
+            `Every other digit (${blocked}) already appears in its row, column, or 3×3 box.`
+        };
       }
 
-      // 2. Hidden Single in a row
+      // 2. Collect ALL hidden singles across rows, cols, boxes — pick most constrained
+      const hiddenSingles = [];
       for (let num = 1; num <= 9; num++) {
         for (let row = 0; row < 9; row++) {
-          const positions = [];
+          const ps = [];
           for (let col = 0; col < 9; col++) {
             const pos = row * 9 + col;
-            if (grid[pos] === 0 && isValid(grid, pos, num)) positions.push(pos);
+            if (grid[pos] === 0 && isValid(grid, pos, num)) ps.push(pos);
           }
-          if (positions.length === 1) {
-            const pos = positions[0], col = pos % 9;
-            return {
-              pos, value: num,
-              technique: 'Hidden Single — Row',
-              explanation: `In row ${row+1}, the digit <b>${num}</b> can only fit in column ${col+1}. ` +
-                `Every other empty cell in row ${row+1} is blocked from having ${num} by its column or box.`
-            };
-          }
+          if (ps.length === 1) hiddenSingles.push({ pos: ps[0], value: num, context: 'row', row });
         }
-      }
-
-      // 3. Hidden Single in a column
-      for (let num = 1; num <= 9; num++) {
         for (let col = 0; col < 9; col++) {
-          const positions = [];
+          const ps = [];
           for (let row = 0; row < 9; row++) {
             const pos = row * 9 + col;
-            if (grid[pos] === 0 && isValid(grid, pos, num)) positions.push(pos);
+            if (grid[pos] === 0 && isValid(grid, pos, num)) ps.push(pos);
           }
-          if (positions.length === 1) {
-            const pos = positions[0], row = Math.floor(pos / 9);
-            return {
-              pos, value: num,
-              technique: 'Hidden Single — Column',
-              explanation: `In column ${col+1}, the digit <b>${num}</b> can only fit in row ${row+1}. ` +
-                `Every other empty cell in column ${col+1} is blocked from having ${num} by its row or box.`
-            };
-          }
+          if (ps.length === 1) hiddenSingles.push({ pos: ps[0], value: num, context: 'col', col });
         }
-      }
-
-      // 4. Hidden Single in a 3×3 box
-      for (let num = 1; num <= 9; num++) {
         for (let br = 0; br < 3; br++) {
           for (let bc = 0; bc < 3; bc++) {
-            const positions = [];
+            const ps = [];
             for (let i = 0; i < 9; i++) {
-              const row = br * 3 + Math.floor(i / 3);
-              const col = bc * 3 + (i % 3);
-              const pos = row * 9 + col;
-              if (grid[pos] === 0 && isValid(grid, pos, num)) positions.push(pos);
+              const pos = (br * 3 + Math.floor(i / 3)) * 9 + bc * 3 + (i % 3);
+              if (grid[pos] === 0 && isValid(grid, pos, num)) ps.push(pos);
             }
-            if (positions.length === 1) {
-              const pos = positions[0];
-              const row = Math.floor(pos / 9), col = pos % 9;
-              return {
-                pos, value: num,
-                technique: 'Hidden Single — Box',
-                explanation: `In the 3×3 box covering rows ${br*3+1}–${br*3+3}, columns ${bc*3+1}–${bc*3+3}, ` +
-                  `the digit <b>${num}</b> can only fit in cell R${row+1}C${col+1}. ` +
-                  `All other cells in this box are blocked from having ${num}.`
-              };
-            }
+            if (ps.length === 1) hiddenSingles.push({ pos: ps[0], value: num, context: 'box', br, bc });
           }
         }
       }
+      if (hiddenSingles.length > 0) {
+        hiddenSingles.sort((a, b) => peersFilled(grid, b.pos) - peersFilled(grid, a.pos));
+        const best = hiddenSingles[0];
+        const { pos, value, context } = best;
+        const row = Math.floor(pos / 9), col = pos % 9;
+        if (context === 'row') {
+          return { pos, value, technique: 'Hidden Single — Row',
+            explanation: `In row ${best.row + 1}, the digit <b>${value}</b> can only fit in column ${col+1}. ` +
+              `Every other empty cell in that row is blocked from having ${value} by its column or box.` };
+        } else if (context === 'col') {
+          return { pos, value, technique: 'Hidden Single — Column',
+            explanation: `In column ${best.col + 1}, the digit <b>${value}</b> can only fit in row ${row+1}. ` +
+              `Every other empty cell in that column is blocked from having ${value} by its row or box.` };
+        } else {
+          const { br, bc } = best;
+          return { pos, value, technique: 'Hidden Single — Box',
+            explanation: `In the 3×3 box at rows ${br*3+1}–${br*3+3}, columns ${bc*3+1}–${bc*3+3}, ` +
+              `the digit <b>${value}</b> can only fit in cell R${row+1}C${col+1}. ` +
+              `All other cells in that box are blocked from having ${value}.` };
+        }
+      }
 
-      // 5. Trial & Error — most-constrained cell + backtracking to find correct value
+      // 3. Trial & Error — most-constrained cell (fewest candidates) + backtracking
       let minLen = 10, bestPos = -1, bestCands = [];
       for (let pos = 0; pos < 81; pos++) {
         if (grid[pos] !== 0) continue;
         const cands = getCandidates(grid, pos);
-        if (cands.length < minLen) { minLen = cands.length; bestPos = pos; bestCands = cands; }
+        if (cands.length < minLen ||
+            (cands.length === minLen && peersFilled(grid, pos) > peersFilled(grid, bestPos))) {
+          minLen = cands.length; bestPos = pos; bestCands = cands;
+        }
       }
       const solved = [...grid];
       backtrack(solved);
       const value = solved[bestPos];
       const row = Math.floor(bestPos / 9), col = bestPos % 9;
       return {
-        pos: bestPos, value,
-        technique: 'Trial & Error',
-        explanation: `No single-step logic resolves the puzzle right now. ` +
-          `Cell R${row+1}C${col+1} has ${minLen} candidates (${bestCands.join(', ')}). ` +
+        pos: bestPos, value, technique: 'Trial & Error',
+        explanation: `No single-step logic applies here. Cell R${row+1}C${col+1} has ` +
+          `${minLen} candidates (${bestCands.join(', ')}). ` +
           `Deeper analysis confirms <b>${value}</b> is the only digit that leads to a valid solution.`
       };
     }
