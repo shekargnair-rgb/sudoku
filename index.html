@@ -99,6 +99,20 @@
       background: #2a1a1a;
     }
 
+    /* User-entered number that is the only occurrence (determinant) */
+    .cell.unique {
+      color: #60a5fa;
+      font-size: 1.3rem;
+    }
+
+    /* User-entered number that appears in more than one cell (candidate/pencil mark) */
+    .cell.candidate {
+      color: #fb923c;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
     @keyframes pop {
       0%   { transform: scale(0.85); }
       60%  { transform: scale(1.08); }
@@ -202,6 +216,32 @@
       e.target.value = v ? v[v.length - 1] : '';
       e.target.classList.remove('solved', 'error');
       setStatus('');
+      updateCandidateStyles();
+    }
+
+    function updateCandidateStyles() {
+      // Count occurrences of each digit across all user-entered (non-given) cells
+      const counts = new Array(10).fill(0);
+      cells.forEach(c => {
+        if (!c.classList.contains('given') && c.value) {
+          counts[parseInt(c.value)]++;
+        }
+      });
+
+      cells.forEach(c => {
+        if (c.classList.contains('given') || !c.value) {
+          c.classList.remove('candidate', 'unique');
+          return;
+        }
+        const digit = parseInt(c.value);
+        if (counts[digit] > 1) {
+          c.classList.add('candidate');
+          c.classList.remove('unique');
+        } else {
+          c.classList.add('unique');
+          c.classList.remove('candidate');
+        }
+      });
     }
 
     function onKey(e) {
