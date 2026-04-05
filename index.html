@@ -30,17 +30,17 @@
       background-clip: text;
     }
 
-    .subtitle {
-      font-size: 0.85rem;
-      color: #6b7280;
-      margin-bottom: 8px;
-      letter-spacing: 0.3px;
-    }
-
     .byline {
       font-size: 0.75rem;
       color: #9ca3af;
       margin-bottom: 10px;
+      letter-spacing: 0.3px;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: #6b7280;
+      margin-bottom: 28px;
       letter-spacing: 0.3px;
     }
 
@@ -99,18 +99,14 @@
       pointer-events: none;
     }
 
-    .cell.given   .cell-num { color: #a78bfa; }
-    .cell.solved  .cell-num { color: #34d399; }
-    .cell.unique  .cell-num { color: #60a5fa; }
-    .cell.candidate .cell-num { color: #fb923c; }
-    .cell.hint    .cell-num { color: #fbbf24; }
-    .cell.error   .cell-num { color: #f87171; }
+    /* Color rules — only special states change color */
+    .cell.given  .cell-num { color: #a78bfa; }
+    .cell.solved .cell-num { color: #34d399; animation: pop 0.2s ease; }
+    .cell.hint   .cell-num { color: #fbbf24; animation: pop 0.2s ease; }
+    .cell.error  .cell-num { color: #f87171; }
 
-    .cell.error  { background: #2a1a1a; }
-    .cell.hint   { background: #221e0a; }
-
-    .cell.solved .cell-num { animation: pop 0.2s ease; }
-    .cell.hint   .cell-num { animation: pop 0.2s ease; }
+    .cell.error { background: #2a1a1a; }
+    .cell.hint  { background: #221e0a; }
 
     @keyframes pop {
       0%   { transform: scale(0.85); }
@@ -118,7 +114,7 @@
       100% { transform: scale(1); }
     }
 
-    /* Pencil marks 3×3 sub-grid */
+    /* Pencil marks — 3×3 sub-grid */
     .pencil-grid {
       display: none;
       position: absolute;
@@ -132,7 +128,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.78rem;
+      font-size: 0.92rem;
       font-weight: 700;
       color: #fb923c;
       line-height: 1;
@@ -253,13 +249,12 @@
     .api-key-save {
       padding: 6px 14px;
       border-radius: 7px;
-      border: none;
+      border: 1px solid #3a3a4a;
       background: #2a2a3a;
       color: #a0a0b8;
       font-size: 0.78rem;
       font-weight: 600;
       cursor: pointer;
-      border: 1px solid #3a3a4a;
     }
     .api-key-save:hover { background: #323244; color: #e8e8f0; }
 
@@ -314,11 +309,18 @@
   </div>
 
   <script>
-    const boardEl    = document.getElementById('board');
-    const status     = document.getElementById('status');
-    const hintPanel  = document.getElementById('hintPanel');
-    const hintTech   = document.getElementById('hintTechnique');
-    const hintText   = document.getElementById('hintText');
+    // Prevent Backspace from navigating the browser back when not in a text field
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+      }
+    });
+
+    const boardEl     = document.getElementById('board');
+    const status      = document.getElementById('status');
+    const hintPanel   = document.getElementById('hintPanel');
+    const hintTech    = document.getElementById('hintTechnique');
+    const hintText    = document.getElementById('hintText');
     const apiKeyInput = document.getElementById('apiKeyInput');
 
     // Restore saved API key
@@ -356,9 +358,9 @@
     // ── Render ───────────────────────────────────────────────────────────────
 
     function renderCell(idx) {
-      const data      = cellData[idx];
-      const el        = cellEls[idx];
-      const numEl     = el.querySelector('.cell-num');
+      const data       = cellData[idx];
+      const el         = cellEls[idx];
+      const numEl      = el.querySelector('.cell-num');
       const pencilGrid = el.querySelector('.pencil-grid');
 
       if (data.value) {
@@ -383,38 +385,35 @@
       const el   = cellEls[idx];
       const data = cellData[idx];
 
-      // Always prevent Backspace from navigating back and arrows from scrolling
       const moves = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 9, ArrowUp: -9 };
-      if (e.key === 'Backspace' || e.key === 'Delete' || moves[e.key] !== undefined) {
-        e.preventDefault();
-      }
 
-      // Locked cells (given or post-solve) — navigation still works
-      if (el.classList.contains('given') || el.classList.contains('locked')) {
-        if (moves[e.key] !== undefined) {
-          const next = idx + moves[e.key];
-          if (next >= 0 && next < 81) cellEls[next].focus();
-        }
+      // Prevent arrow keys from scrolling the page
+      if (moves[e.key] !== undefined) {
+        e.preventDefault();
+        const next = idx + moves[e.key];
+        if (next >= 0 && next < 81) cellEls[next].focus();
         return;
       }
+
+      // Locked cells (given or post-solve) — no edits allowed
+      if (el.classList.contains('given') || el.classList.contains('locked')) return;
 
       if (e.key >= '1' && e.key <= '9') {
         e.preventDefault();
         const digit = parseInt(e.key);
 
         if (data.marks.size > 0) {
-          // Toggle pencil mark
+          // In pencil-mark mode: toggle this digit
           if (data.marks.has(digit)) data.marks.delete(digit);
           else data.marks.add(digit);
-          if (data.marks.size === 0) data.value = 0;
         } else if (data.value === digit) {
-          // Typing same digit clears the cell
+          // Typing the same digit again clears the cell
           data.value = 0;
         } else if (data.value === 0) {
-          // Empty cell → set value
+          // Empty cell: set a single value
           data.value = digit;
         } else {
-          // Already has a different value → switch to pencil-mark mode
+          // Cell has a different value: switch to pencil-mark mode with both digits
           data.marks.add(data.value);
           data.marks.add(digit);
           data.value = 0;
@@ -424,21 +423,15 @@
         renderCell(idx);
         setStatus('');
         hideHint();
-        updateCandidateStyles();
 
       } else if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') {
+        e.preventDefault();
         data.value = 0;
         data.marks.clear();
-        el.classList.remove('solved', 'error', 'hint', 'candidate', 'unique');
+        el.classList.remove('solved', 'error', 'hint');
         renderCell(idx);
         setStatus('');
         hideHint();
-        updateCandidateStyles();
-      }
-
-      if (moves[e.key] !== undefined) {
-        const next = idx + moves[e.key];
-        if (next >= 0 && next < 81) cellEls[next].focus();
       }
     }
 
@@ -453,32 +446,6 @@
       cellData[idx].marks.clear();
       cellEls[idx].className = 'cell given';
       renderCell(idx);
-    }
-
-    function updateCandidateStyles() {
-      const counts = new Array(10).fill(0);
-      cellEls.forEach((el, i) => {
-        const d = cellData[i];
-        if (!el.classList.contains('given') && !el.classList.contains('hint') && d.value) {
-          counts[d.value]++;
-        }
-      });
-
-      cellEls.forEach((el, i) => {
-        const d = cellData[i];
-        if (el.classList.contains('given') || el.classList.contains('hint') ||
-            !d.value || d.marks.size > 0) {
-          el.classList.remove('candidate', 'unique');
-          return;
-        }
-        if (counts[d.value] > 1) {
-          el.classList.add('candidate');
-          el.classList.remove('unique');
-        } else {
-          el.classList.add('unique');
-          el.classList.remove('candidate');
-        }
-      });
     }
 
     function setStatus(msg, type = '') {
@@ -529,17 +496,17 @@
     // ── Solver ───────────────────────────────────────────────────────────────
 
     function isValid(grid, pos, num) {
-      const row = Math.floor(pos / 9);
-      const col = pos % 9;
+      const row    = Math.floor(pos / 9);
+      const col    = pos % 9;
       const boxRow = Math.floor(row / 3) * 3;
       const boxCol = Math.floor(col / 3) * 3;
 
       for (let i = 0; i < 9; i++) {
-        if (grid[row * 9 + i] === num) return false;
-        if (grid[i * 9 + col] === num) return false;
+        if (grid[row * 9 + i]  === num) return false;
+        if (grid[i * 9 + col]  === num) return false;
         const br = boxRow + Math.floor(i / 3);
         const bc = boxCol + (i % 3);
-        if (grid[br * 9 + bc] === num) return false;
+        if (grid[br * 9 + bc]  === num) return false;
       }
       return true;
     }
@@ -572,10 +539,7 @@
         const v = grid[pos];
         if (!v) continue;
         grid[pos] = 0;
-        if (!isValid(grid, pos, v)) {
-          grid[pos] = v;
-          return pos;
-        }
+        if (!isValid(grid, pos, v)) { grid[pos] = v; return pos; }
         grid[pos] = v;
       }
       return -1;
@@ -588,7 +552,7 @@
       const conflict = validateInput(grid);
       if (conflict !== -1) {
         cellEls[conflict].classList.add('error');
-        setStatus('Conflict detected in the puzzle — check highlighted cell', 'error');
+        setStatus('Conflict detected — check highlighted cell', 'error');
         return;
       }
 
@@ -597,9 +561,9 @@
         el.className = 'cell' + (given[i] ? ' given' : '');
       });
 
-      const start = performance.now();
+      const start    = performance.now();
       const solvable = backtrack(grid);
-      const elapsed = (performance.now() - start).toFixed(1);
+      const elapsed  = (performance.now() - start).toFixed(1);
 
       if (!solvable) {
         setStatus('No solution exists for this puzzle', 'error');
@@ -622,7 +586,7 @@
     // ── Set as Puzzle ─────────────────────────────────────────────────────────
 
     function setPuzzle() {
-      const grid = getGrid();
+      const grid     = getGrid();
       const conflict = validateInput(grid);
       if (conflict !== -1) {
         cellEls[conflict].classList.add('error');
@@ -633,7 +597,7 @@
       cellEls.forEach((el, i) => {
         if (cellData[i].value && !el.classList.contains('given')) {
           cellData[i].marks.clear();
-          el.classList.remove('candidate', 'unique', 'hint', 'solved', 'error');
+          el.classList.remove('hint', 'solved', 'error');
           el.classList.add('given');
           count++;
         }
@@ -650,7 +614,7 @@
 
     function peersFilled(grid, pos) {
       const row = Math.floor(pos / 9), col = pos % 9;
-      const br = Math.floor(row / 3) * 3, bc = Math.floor(col / 3) * 3;
+      const br  = Math.floor(row / 3) * 3, bc = Math.floor(col / 3) * 3;
       let count = 0;
       for (let i = 0; i < 9; i++) {
         if (grid[row * 9 + i] !== 0) count++;
@@ -664,7 +628,7 @@
       const grid = getGrid();
 
       if (validateInput(grid) !== -1) return { error: 'Fix conflicts before stepping' };
-      if (!grid.includes(0)) return { done: true };
+      if (!grid.includes(0))          return { done: true };
 
       // 1. Naked singles
       const nakedSingles = [];
@@ -677,7 +641,7 @@
       if (nakedSingles.length > 0) {
         nakedSingles.sort((a, b) => peersFilled(grid, b.pos) - peersFilled(grid, a.pos));
         const { pos, value } = nakedSingles[0];
-        const row = Math.floor(pos / 9), col = pos % 9;
+        const row     = Math.floor(pos / 9), col = pos % 9;
         const blocked = [1,2,3,4,5,6,7,8,9].filter(n => n !== value).join(', ');
         return {
           pos, value, technique: 'Naked Single',
@@ -718,7 +682,7 @@
       }
       if (hiddenSingles.length > 0) {
         hiddenSingles.sort((a, b) => peersFilled(grid, b.pos) - peersFilled(grid, a.pos));
-        const best = hiddenSingles[0];
+        const best           = hiddenSingles[0];
         const { pos, value, context } = best;
         const row = Math.floor(pos / 9), col = pos % 9;
         if (context === 'row') {
@@ -751,7 +715,7 @@
       const solved = [...grid];
       backtrack(solved);
       const value = solved[bestPos];
-      const row = Math.floor(bestPos / 9), col = bestPos % 9;
+      const row   = Math.floor(bestPos / 9), col = bestPos % 9;
       return {
         pos: bestPos, value, technique: 'Trial & Error',
         explanation: `No single-step logic applies here. Cell R${row+1}C${col+1} has ` +
@@ -841,7 +805,6 @@
             if (ch !== '0') setCellGiven(i, parseInt(ch));
           });
           setStatus('Puzzle loaded from photo', 'success');
-          updateCandidateStyles();
 
         } catch (err) {
           setStatus('Could not read photo: ' + err.message, 'error');
