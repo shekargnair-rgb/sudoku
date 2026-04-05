@@ -426,13 +426,10 @@
 
     // ── Data helpers ─────────────────────────────────────────────────────────
 
-    // Returns a confirmed value or a single-mark value; 0 if uncertain/empty
+    // Returns only confirmed values (given, solved, determinant, hint).
+    // Pencil marks are hypotheses and are never passed to the solver.
     function getGrid() {
-      return cellData.map(d => {
-        if (d.value) return d.value;
-        if (d.marks.size === 1) return [...d.marks][0];
-        return 0;
-      });
+      return cellData.map(d => d.value || 0);
     }
 
     function setCellGiven(idx, digit) {
