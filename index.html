@@ -76,21 +76,16 @@
       transition: background 0.15s;
     }
 
-    .cell:focus { background: #252535; }
+    .cell:focus         { background: #252535; }
     .cell:hover:not(:focus) { background: #20202e; }
 
-    /* Thick borders between 3x3 boxes */
+    /* Thick borders between 3×3 boxes */
     .cell:nth-child(9n+3),
-    .cell:nth-child(9n+6) {
-      border-right: 3px solid #4c4c6a;
-    }
-
+    .cell:nth-child(9n+6)               { border-right:  3px solid #4c4c6a; }
     .cell:nth-child(n+19):nth-child(-n+27),
-    .cell:nth-child(n+46):nth-child(-n+54) {
-      border-bottom: 3px solid #4c4c6a;
-    }
+    .cell:nth-child(n+46):nth-child(-n+54) { border-bottom: 3px solid #4c4c6a; }
 
-    /* Single large number */
+    /* Large confirmed number (given / solved / hint) */
     .cell-num {
       font-size: 1.3rem;
       font-weight: 600;
@@ -99,14 +94,13 @@
       pointer-events: none;
     }
 
-    /* Color rules — only special states change color */
-    .cell.given  .cell-num { color: #a78bfa; }
-    .cell.solved .cell-num { color: #34d399; animation: pop 0.2s ease; }
-    .cell.hint   .cell-num { color: #fbbf24; animation: pop 0.2s ease; }
-    .cell.error  .cell-num { color: #f87171; }
-
-    .cell.error { background: #2a1a1a; }
-    .cell.hint  { background: #221e0a; }
+    .cell.given       .cell-num { color: #a78bfa; }
+    .cell.solved      .cell-num { color: #34d399; animation: pop 0.2s ease; }
+    .cell.hint        .cell-num { color: #fbbf24; animation: pop 0.2s ease; }
+    .cell.determinant .cell-num { color: #60a5fa; }
+    .cell.error       .cell-num { color: #f87171; }
+    .cell.error  { background: #2a1a1a; }
+    .cell.hint   { background: #221e0a; }
 
     @keyframes pop {
       0%   { transform: scale(0.85); }
@@ -114,7 +108,25 @@
       100% { transform: scale(1); }
     }
 
-    /* Pencil marks — 3×3 sub-grid */
+    /* Pencil-mark overlay */
+    .pencil-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      align-items: center;
+      justify-content: center;
+    }
+    .pencil-overlay.single { display: flex; }
+
+    /* Single pencil mark — centred, medium size */
+    .pencil-single {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fb923c;
+      pointer-events: none;
+    }
+
+    /* Multi pencil marks — 3×3 sub-grid */
     .pencil-grid {
       display: none;
       position: absolute;
@@ -128,11 +140,11 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.92rem;
       font-weight: 700;
       color: #fb923c;
       line-height: 1;
       pointer-events: none;
+      /* font-size set dynamically based on mark count */
     }
 
     .controls {
@@ -152,52 +164,25 @@
       cursor: pointer;
       transition: transform 0.1s, opacity 0.1s;
     }
-
     button:active { transform: scale(0.96); }
 
-    .btn-solve {
-      background: linear-gradient(135deg, #7c3aed, #2563eb);
-      color: #fff;
-      box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
-    }
+    .btn-solve      { background: linear-gradient(135deg, #7c3aed, #2563eb); color: #fff;
+                      box-shadow: 0 4px 14px rgba(124,58,237,0.35); }
     .btn-solve:hover { opacity: 0.9; }
 
-    .btn-clear {
-      background: #2a2a3a;
-      color: #a0a0b8;
-      border: 1px solid #3a3a4a;
-    }
-    .btn-clear:hover { background: #323244; color: #e8e8f0; }
+    .btn-clear, .btn-example, .btn-photo {
+      background: #2a2a3a; color: #a0a0b8; border: 1px solid #3a3a4a; }
+    .btn-clear:hover, .btn-example:hover, .btn-photo:hover {
+      background: #323244; color: #e8e8f0; }
 
-    .btn-example {
-      background: #2a2a3a;
-      color: #a0a0b8;
-      border: 1px solid #3a3a4a;
-    }
-    .btn-example:hover { background: #323244; color: #e8e8f0; }
-
-    .btn-hint {
-      background: linear-gradient(135deg, #b45309, #92400e);
-      color: #fff;
-      box-shadow: 0 4px 14px rgba(180, 83, 9, 0.3);
-    }
+    .btn-hint       { background: linear-gradient(135deg, #b45309, #92400e); color: #fff;
+                      box-shadow: 0 4px 14px rgba(180,83,9,0.3); }
     .btn-hint:hover { opacity: 0.9; }
 
-    .btn-photo {
-      background: #2a2a3a;
-      color: #a0a0b8;
-      border: 1px solid #3a3a4a;
-    }
-    .btn-photo:hover { background: #323244; color: #e8e8f0; }
-
-    .btn-set-puzzle {
-      background: linear-gradient(135deg, #065f46, #047857);
-      color: #fff;
-      box-shadow: 0 4px 14px rgba(6, 95, 70, 0.3);
-    }
+    .btn-set-puzzle { background: linear-gradient(135deg, #065f46, #047857); color: #fff;
+                      box-shadow: 0 4px 14px rgba(6,95,70,0.3); }
     .btn-set-puzzle:hover { opacity: 0.9; }
 
-    /* Hint explanation panel */
     .hint-panel {
       display: none;
       margin-top: 14px;
@@ -212,59 +197,33 @@
     }
     .hint-panel.visible { display: block; }
     .hint-panel .technique {
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: #fbbf24;
-      margin-bottom: 5px;
+      font-size: 0.72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.8px;
+      color: #fbbf24; margin-bottom: 5px;
     }
 
-    /* API key row */
     .api-key-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 14px;
-      flex-wrap: wrap;
-      justify-content: center;
+      display: flex; align-items: center; gap: 8px;
+      margin-top: 14px; flex-wrap: wrap; justify-content: center;
     }
-    .api-key-label {
-      font-size: 0.75rem;
-      color: #6b7280;
-      white-space: nowrap;
-    }
+    .api-key-label { font-size: 0.75rem; color: #6b7280; white-space: nowrap; }
     .api-key-input {
-      flex: 1;
-      min-width: 0;
-      padding: 6px 10px;
-      border-radius: 7px;
-      border: 1px solid #3a3a4a;
-      background: #12121a;
-      color: #e8e8f0;
-      font-size: 0.78rem;
-      font-family: monospace;
+      flex: 1; min-width: 0; padding: 6px 10px; border-radius: 7px;
+      border: 1px solid #3a3a4a; background: #12121a; color: #e8e8f0;
+      font-size: 0.78rem; font-family: monospace;
     }
     .api-key-input::placeholder { color: #4b5563; }
     .api-key-save {
-      padding: 6px 14px;
-      border-radius: 7px;
-      border: 1px solid #3a3a4a;
-      background: #2a2a3a;
-      color: #a0a0b8;
-      font-size: 0.78rem;
-      font-weight: 600;
-      cursor: pointer;
+      padding: 6px 14px; border-radius: 7px; border: 1px solid #3a3a4a;
+      background: #2a2a3a; color: #a0a0b8;
+      font-size: 0.78rem; font-weight: 600; cursor: pointer;
     }
     .api-key-save:hover { background: #323244; color: #e8e8f0; }
 
     .status {
-      margin-top: 14px;
-      font-size: 0.82rem;
-      text-align: center;
-      min-height: 20px;
-      color: #6b7280;
-      letter-spacing: 0.3px;
+      margin-top: 14px; font-size: 0.82rem;
+      text-align: center; min-height: 20px;
+      color: #6b7280; letter-spacing: 0.3px;
     }
     .status.success { color: #34d399; }
     .status.error   { color: #f87171; }
@@ -289,11 +248,9 @@
       <button class="btn-solve"      onclick="solve()">Solve</button>
     </div>
 
-    <!-- hidden file input for image upload -->
     <input type="file" id="imageInput" accept="image/*" capture="environment"
            style="display:none" onchange="handleImageFile(this)" />
 
-    <!-- API key (needed only for Import Photo) -->
     <div class="api-key-row">
       <span class="api-key-label">Anthropic API key (for photo import):</span>
       <input class="api-key-input" type="password" id="apiKeyInput"
@@ -309,9 +266,10 @@
   </div>
 
   <script>
-    // Prevent Backspace from navigating the browser back when not in a text field
+    // Prevent Backspace from navigating back in the browser
     document.addEventListener('keydown', e => {
-      if (e.key === 'Backspace' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+      if (e.key === 'Backspace' &&
+          e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
         e.preventDefault();
       }
     });
@@ -320,13 +278,12 @@
     const status      = document.getElementById('status');
     const hintPanel   = document.getElementById('hintPanel');
     const hintTech    = document.getElementById('hintTechnique');
-    const hintText    = document.getElementById('hintText');
+    const hintTextEl  = document.getElementById('hintText');
     const apiKeyInput = document.getElementById('apiKeyInput');
 
-    // Restore saved API key
     apiKeyInput.value = localStorage.getItem('anthropicApiKey') || '';
 
-    // Per-cell data model
+    // Per-cell model: value = confirmed digit (given/solved/hint), marks = pencil candidates
     const cellData = Array.from({ length: 81 }, () => ({ value: 0, marks: new Set() }));
     const cellEls  = [];
 
@@ -337,9 +294,18 @@
       div.tabIndex  = 0;
       div.dataset.idx = i;
 
+      // Large confirmed number
       const numEl = document.createElement('span');
       numEl.className = 'cell-num';
 
+      // Single pencil mark (centered, medium)
+      const singleOverlay = document.createElement('div');
+      singleOverlay.className = 'pencil-overlay';
+      const singleSpan = document.createElement('span');
+      singleSpan.className = 'pencil-single';
+      singleOverlay.appendChild(singleSpan);
+
+      // Multi pencil marks (3×3 grid)
       const pencilGrid = document.createElement('div');
       pencilGrid.className = 'pencil-grid';
       for (let n = 1; n <= 9; n++) {
@@ -349,6 +315,7 @@
       }
 
       div.appendChild(numEl);
+      div.appendChild(singleOverlay);
       div.appendChild(pencilGrid);
       div.addEventListener('keydown', e => handleCellKey(e, i));
       boardEl.appendChild(div);
@@ -358,23 +325,43 @@
     // ── Render ───────────────────────────────────────────────────────────────
 
     function renderCell(idx) {
-      const data       = cellData[idx];
-      const el         = cellEls[idx];
-      const numEl      = el.querySelector('.cell-num');
-      const pencilGrid = el.querySelector('.pencil-grid');
+      const data         = cellData[idx];
+      const el           = cellEls[idx];
+      const numEl        = el.querySelector('.cell-num');
+      const singleOverlay = el.querySelector('.pencil-overlay');
+      const singleSpan   = el.querySelector('.pencil-single');
+      const pencilGrid   = el.querySelector('.pencil-grid');
 
       if (data.value) {
+        // Confirmed digit
         numEl.textContent = data.value;
+        singleOverlay.classList.remove('single');
         pencilGrid.classList.remove('visible');
-      } else if (data.marks.size > 0) {
+
+      } else if (data.marks.size === 1) {
+        // One pencil mark — centred, medium font
         numEl.textContent = '';
+        singleSpan.textContent = [...data.marks][0];
+        singleOverlay.classList.add('single');
+        pencilGrid.classList.remove('visible');
+
+      } else if (data.marks.size > 1) {
+        // Multiple pencil marks — 3×3 grid, shrinking font
+        numEl.textContent = '';
+        singleOverlay.classList.remove('single');
         pencilGrid.classList.add('visible');
+
+        const fontSize = data.marks.size <= 4 ? '0.85rem' : '0.7rem';
         pencilGrid.querySelectorAll('span').forEach(s => {
           const n = parseInt(s.dataset.n);
-          s.textContent = data.marks.has(n) ? n : '';
+          s.textContent    = data.marks.has(n) ? n : '';
+          s.style.fontSize = fontSize;
         });
+
       } else {
+        // Empty
         numEl.textContent = '';
+        singleOverlay.classList.remove('single');
         pencilGrid.classList.remove('visible');
       }
     }
@@ -387,7 +374,7 @@
 
       const moves = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 9, ArrowUp: -9 };
 
-      // Prevent arrow keys from scrolling the page
+      // Arrow keys: navigate, always
       if (moves[e.key] !== undefined) {
         e.preventDefault();
         const next = idx + moves[e.key];
@@ -395,31 +382,33 @@
         return;
       }
 
-      // Locked cells (given or post-solve) — no edits allowed
+      // Locked cells cannot be edited
       if (el.classList.contains('given') || el.classList.contains('locked')) return;
 
       if (e.key >= '1' && e.key <= '9') {
         e.preventDefault();
         const digit = parseInt(e.key);
 
-        if (data.marks.size > 0) {
-          // In pencil-mark mode: toggle this digit
-          if (data.marks.has(digit)) data.marks.delete(digit);
-          else data.marks.add(digit);
-        } else if (data.value === digit) {
-          // Typing the same digit again clears the cell
-          data.value = 0;
-        } else if (data.value === 0) {
-          // Empty cell: set a single value
+        // Build a grid snapshot treating this cell as empty to check candidates
+        const grid = getGrid();
+        grid[idx]  = 0;
+        const cands = getCandidates(grid, idx);
+        const isDeterminant = cands.length === 1 && cands[0] === digit;
+
+        if (isDeterminant) {
+          // Only one number can go here — show full-size in blue
           data.value = digit;
+          data.marks.clear();
+          el.classList.remove('solved', 'error', 'hint');
+          el.classList.add('determinant');
         } else {
-          // Cell has a different value: switch to pencil-mark mode with both digits
-          data.marks.add(data.value);
-          data.marks.add(digit);
+          // Multiple candidates — pencil mark mode (toggle)
           data.value = 0;
+          el.classList.remove('solved', 'error', 'hint', 'determinant');
+          if (data.marks.has(digit)) data.marks.delete(digit);
+          else                        data.marks.add(digit);
         }
 
-        el.classList.remove('solved', 'error', 'hint');
         renderCell(idx);
         setStatus('');
         hideHint();
@@ -428,7 +417,7 @@
         e.preventDefault();
         data.value = 0;
         data.marks.clear();
-        el.classList.remove('solved', 'error', 'hint');
+        el.classList.remove('solved', 'error', 'hint', 'determinant');
         renderCell(idx);
         setStatus('');
         hideHint();
@@ -437,8 +426,13 @@
 
     // ── Data helpers ─────────────────────────────────────────────────────────
 
+    // Returns a confirmed value or a single-mark value; 0 if uncertain/empty
     function getGrid() {
-      return cellData.map(d => d.value);
+      return cellData.map(d => {
+        if (d.value) return d.value;
+        if (d.marks.size === 1) return [...d.marks][0];
+        return 0;
+      });
     }
 
     function setCellGiven(idx, digit) {
@@ -454,39 +448,36 @@
     }
 
     function showHint(technique, html) {
-      hintTech.textContent = technique;
-      hintText.innerHTML = html;
+      hintTech.textContent   = technique;
+      hintTextEl.innerHTML   = html;
       hintPanel.classList.add('visible');
     }
 
-    function hideHint() {
-      hintPanel.classList.remove('visible');
-    }
+    function hideHint() { hintPanel.classList.remove('visible'); }
 
     // ── Board actions ────────────────────────────────────────────────────────
 
     function clearBoard() {
       cellData.forEach(d => { d.value = 0; d.marks.clear(); });
-      cellEls.forEach((el, i) => {
-        el.className = 'cell';
-        renderCell(i);
-      });
+      cellEls.forEach((el, i) => { el.className = 'cell'; renderCell(i); });  // clears all classes
       setStatus('');
       hideHint();
     }
 
     function loadExample() {
       clearBoard();
+      const saved = localStorage.getItem('lastPuzzle');
+      if (saved) {
+        try {
+          JSON.parse(saved).forEach(({ idx, digit }) => setCellGiven(idx, digit));
+          setStatus('Last saved puzzle loaded');
+          return;
+        } catch (e) { /* fall through to hardcoded */ }
+      }
       const puzzle =
-        '530070000' +
-        '600195000' +
-        '098000060' +
-        '800060003' +
-        '400803001' +
-        '700020006' +
-        '060000280' +
-        '000419005' +
-        '000080079';
+        '530070000' + '600195000' + '098000060' +
+        '800060003' + '400803001' + '700020006' +
+        '060000280' + '000419005' + '000080079';
       puzzle.split('').forEach((ch, i) => {
         if (ch !== '0') setCellGiven(i, parseInt(ch));
       });
@@ -496,16 +487,12 @@
     // ── Solver ───────────────────────────────────────────────────────────────
 
     function isValid(grid, pos, num) {
-      const row    = Math.floor(pos / 9);
-      const col    = pos % 9;
-      const boxRow = Math.floor(row / 3) * 3;
-      const boxCol = Math.floor(col / 3) * 3;
-
+      const row    = Math.floor(pos / 9), col = pos % 9;
+      const boxRow = Math.floor(row / 3) * 3, boxCol = Math.floor(col / 3) * 3;
       for (let i = 0; i < 9; i++) {
         if (grid[row * 9 + i]  === num) return false;
         if (grid[i * 9 + col]  === num) return false;
-        const br = boxRow + Math.floor(i / 3);
-        const bc = boxCol + (i % 3);
+        const br = boxRow + Math.floor(i / 3), bc = boxCol + (i % 3);
         if (grid[br * 9 + bc]  === num) return false;
       }
       return true;
@@ -514,16 +501,13 @@
     function getCandidates(grid, pos) {
       if (grid[pos] !== 0) return [];
       const result = [];
-      for (let n = 1; n <= 9; n++) {
-        if (isValid(grid, pos, n)) result.push(n);
-      }
+      for (let n = 1; n <= 9; n++) if (isValid(grid, pos, n)) result.push(n);
       return result;
     }
 
     function backtrack(grid) {
       const empty = grid.indexOf(0);
       if (empty === -1) return true;
-
       for (let num = 1; num <= 9; num++) {
         if (isValid(grid, empty, num)) {
           grid[empty] = num;
@@ -547,8 +531,7 @@
 
     function solve() {
       hideHint();
-      const grid = getGrid();
-
+      const grid     = getGrid();
       const conflict = validateInput(grid);
       if (conflict !== -1) {
         cellEls[conflict].classList.add('error');
@@ -565,10 +548,7 @@
       const solvable = backtrack(grid);
       const elapsed  = (performance.now() - start).toFixed(1);
 
-      if (!solvable) {
-        setStatus('No solution exists for this puzzle', 'error');
-        return;
-      }
+      if (!solvable) { setStatus('No solution exists for this puzzle', 'error'); return; }
 
       grid.forEach((v, i) => {
         if (!given[i]) {
@@ -579,7 +559,6 @@
         }
         cellEls[i].classList.add('locked');
       });
-
       setStatus(`Solved in ${elapsed} ms`, 'success');
     }
 
@@ -595,10 +574,17 @@
       }
       let count = 0;
       cellEls.forEach((el, i) => {
-        if (cellData[i].value && !el.classList.contains('given')) {
-          cellData[i].marks.clear();
-          el.classList.remove('hint', 'solved', 'error');
+        if (el.classList.contains('given')) return;
+        const d = cellData[i];
+        // Promote confirmed value OR single pencil mark to given
+        let v = d.value;
+        if (!v && d.marks.size === 1) v = [...d.marks][0];
+        if (v) {
+          d.value = v;
+          d.marks.clear();
+          el.classList.remove('hint', 'solved', 'error', 'determinant');
           el.classList.add('given');
+          renderCell(i);
           count++;
         }
       });
@@ -606,6 +592,12 @@
         setStatus('Fill in your puzzle clues first, then click Set as Puzzle', '');
         return;
       }
+      // Save this puzzle so Load Example can restore it
+      const puzzleData = [];
+      cellEls.forEach((el, i) => {
+        if (el.classList.contains('given')) puzzleData.push({ idx: i, digit: cellData[i].value });
+      });
+      localStorage.setItem('lastPuzzle', JSON.stringify(puzzleData));
       hideHint();
       setStatus(`Puzzle set — ${count} clues locked. Now solve it!`, 'success');
     }
@@ -626,7 +618,6 @@
 
     function findNextStep() {
       const grid = getGrid();
-
       if (validateInput(grid) !== -1) return { error: 'Fix conflicts before stepping' };
       if (!grid.includes(0))          return { done: true };
 
@@ -641,13 +632,11 @@
       if (nakedSingles.length > 0) {
         nakedSingles.sort((a, b) => peersFilled(grid, b.pos) - peersFilled(grid, a.pos));
         const { pos, value } = nakedSingles[0];
-        const row     = Math.floor(pos / 9), col = pos % 9;
+        const row = Math.floor(pos / 9), col = pos % 9;
         const blocked = [1,2,3,4,5,6,7,8,9].filter(n => n !== value).join(', ');
-        return {
-          pos, value, technique: 'Naked Single',
+        return { pos, value, technique: 'Naked Single',
           explanation: `Cell R${row+1}C${col+1} can only be <b>${value}</b>. ` +
-            `Every other digit (${blocked}) already appears in its row, column, or 3×3 box.`
-        };
+            `Every other digit (${blocked}) already appears in its row, column, or 3×3 box.` };
       }
 
       // 2. Hidden singles
@@ -669,37 +658,33 @@
           }
           if (ps.length === 1) hiddenSingles.push({ pos: ps[0], value: num, context: 'col', col });
         }
-        for (let br = 0; br < 3; br++) {
-          for (let bc = 0; bc < 3; bc++) {
-            const ps = [];
-            for (let i = 0; i < 9; i++) {
-              const pos = (br * 3 + Math.floor(i / 3)) * 9 + bc * 3 + (i % 3);
-              if (grid[pos] === 0 && isValid(grid, pos, num)) ps.push(pos);
-            }
-            if (ps.length === 1) hiddenSingles.push({ pos: ps[0], value: num, context: 'box', br, bc });
+        for (let br = 0; br < 3; br++) for (let bc = 0; bc < 3; bc++) {
+          const ps = [];
+          for (let i = 0; i < 9; i++) {
+            const pos = (br * 3 + Math.floor(i / 3)) * 9 + bc * 3 + (i % 3);
+            if (grid[pos] === 0 && isValid(grid, pos, num)) ps.push(pos);
           }
+          if (ps.length === 1) hiddenSingles.push({ pos: ps[0], value: num, context: 'box', br, bc });
         }
       }
       if (hiddenSingles.length > 0) {
         hiddenSingles.sort((a, b) => peersFilled(grid, b.pos) - peersFilled(grid, a.pos));
-        const best           = hiddenSingles[0];
+        const best = hiddenSingles[0];
         const { pos, value, context } = best;
         const row = Math.floor(pos / 9), col = pos % 9;
-        if (context === 'row') {
+        if (context === 'row')
           return { pos, value, technique: 'Hidden Single — Row',
-            explanation: `In row ${best.row + 1}, the digit <b>${value}</b> can only fit in column ${col+1}. ` +
+            explanation: `In row ${best.row+1}, the digit <b>${value}</b> can only fit in column ${col+1}. ` +
               `Every other empty cell in that row is blocked from having ${value} by its column or box.` };
-        } else if (context === 'col') {
+        if (context === 'col')
           return { pos, value, technique: 'Hidden Single — Column',
-            explanation: `In column ${best.col + 1}, the digit <b>${value}</b> can only fit in row ${row+1}. ` +
+            explanation: `In column ${best.col+1}, the digit <b>${value}</b> can only fit in row ${row+1}. ` +
               `Every other empty cell in that column is blocked from having ${value} by its row or box.` };
-        } else {
-          const { br, bc } = best;
-          return { pos, value, technique: 'Hidden Single — Box',
-            explanation: `In the 3×3 box at rows ${br*3+1}–${br*3+3}, columns ${bc*3+1}–${bc*3+3}, ` +
-              `the digit <b>${value}</b> can only fit in cell R${row+1}C${col+1}. ` +
-              `All other cells in that box are blocked from having ${value}.` };
-        }
+        const { br, bc } = best;
+        return { pos, value, technique: 'Hidden Single — Box',
+          explanation: `In the 3×3 box at rows ${br*3+1}–${br*3+3}, columns ${bc*3+1}–${bc*3+3}, ` +
+            `the digit <b>${value}</b> can only fit in cell R${row+1}C${col+1}. ` +
+            `All other cells in that box are blocked from having ${value}.` };
       }
 
       // 3. Trial & Error
@@ -716,17 +701,14 @@
       backtrack(solved);
       const value = solved[bestPos];
       const row   = Math.floor(bestPos / 9), col = bestPos % 9;
-      return {
-        pos: bestPos, value, technique: 'Trial & Error',
+      return { pos: bestPos, value, technique: 'Trial & Error',
         explanation: `No single-step logic applies here. Cell R${row+1}C${col+1} has ` +
           `${minLen} candidates (${bestCands.join(', ')}). ` +
-          `Deeper analysis confirms <b>${value}</b> is the only digit that leads to a valid solution.`
-      };
+          `Deeper analysis confirms <b>${value}</b> is the only digit that leads to a valid solution.` };
     }
 
     function applyNextStep() {
       const step = findNextStep();
-
       if (step.error) { setStatus(step.error, 'error'); return; }
       if (step.done)  { setStatus('Puzzle is already solved!', 'success'); return; }
 
@@ -735,7 +717,6 @@
       cellData[pos].marks.clear();
       cellEls[pos].className = 'cell hint';
       renderCell(pos);
-
       showHint(technique, explanation);
       setStatus('');
     }
@@ -744,34 +725,25 @@
 
     function saveApiKey() {
       const key = apiKeyInput.value.trim();
-      if (key) {
-        localStorage.setItem('anthropicApiKey', key);
-        setStatus('API key saved', 'success');
-      } else {
-        localStorage.removeItem('anthropicApiKey');
-        setStatus('API key cleared', '');
-      }
+      if (key) { localStorage.setItem('anthropicApiKey', key); setStatus('API key saved', 'success'); }
+      else      { localStorage.removeItem('anthropicApiKey'); setStatus('API key cleared', ''); }
     }
 
-    function triggerImageUpload() {
-      document.getElementById('imageInput').click();
-    }
+    function triggerImageUpload() { document.getElementById('imageInput').click(); }
 
     function handleImageFile(input) {
       const file = input.files[0];
       if (!file) return;
       input.value = '';
 
-      const apiKey = (apiKeyInput.value.trim()) || localStorage.getItem('anthropicApiKey') || '';
+      const apiKey = apiKeyInput.value.trim() || localStorage.getItem('anthropicApiKey') || '';
       if (!apiKey) { setStatus('No API key set', 'error'); return; }
 
       const reader = new FileReader();
       reader.onload = async (e) => {
         const base64    = e.target.result.split(',')[1];
         const mediaType = file.type || 'image/jpeg';
-
         setStatus('Reading sudoku from photo…', 'loading');
-
         try {
           const response = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
@@ -784,28 +756,19 @@
             body: JSON.stringify({
               model: 'claude-haiku-4-5-20251001',
               max_tokens: 200,
-              messages: [{
-                role: 'user',
-                content: [
-                  { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-                  { type: 'text',  text: 'This is a sudoku puzzle. Return ONLY the 81 digits of the grid, row by row, using 0 for empty cells. No spaces, no newlines, no explanation — exactly 81 digits.' }
-                ]
-              }]
+              messages: [{ role: 'user', content: [
+                { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+                { type: 'text',  text: 'This is a sudoku puzzle. Return ONLY the 81 digits of the grid, row by row, using 0 for empty cells. No spaces, no newlines, no explanation — exactly 81 digits.' }
+              ]}]
             })
           });
-
-          const data = await response.json();
+          const data   = await response.json();
           if (data.error) throw new Error(data.error.message);
-
           const digits = data.content[0].text.replace(/[^0-9]/g, '');
           if (digits.length !== 81) throw new Error(`Got ${digits.length} digits instead of 81 — try a clearer photo`);
-
           clearBoard();
-          digits.split('').forEach((ch, i) => {
-            if (ch !== '0') setCellGiven(i, parseInt(ch));
-          });
+          digits.split('').forEach((ch, i) => { if (ch !== '0') setCellGiven(i, parseInt(ch)); });
           setStatus('Puzzle loaded from photo', 'success');
-
         } catch (err) {
           setStatus('Could not read photo: ' + err.message, 'error');
         }
