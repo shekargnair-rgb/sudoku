@@ -389,8 +389,10 @@
         e.preventDefault();
         const digit = parseInt(e.key);
 
-        // Build a grid snapshot treating this cell as empty to check candidates
-        const grid = getGrid();
+        // Build a grid snapshot treating this cell as empty to check candidates.
+        // Use single pencil marks from other cells so the check reflects the
+        // user's current working state of the puzzle.
+        const grid = getGridForCandidates();
         grid[idx]  = 0;
         const cands = getCandidates(grid, idx);
         const isDeterminant = cands.length === 1 && cands[0] === digit;
@@ -427,9 +429,19 @@
     // ── Data helpers ─────────────────────────────────────────────────────────
 
     // Returns only confirmed values (given, solved, determinant, hint).
-    // Pencil marks are hypotheses and are never passed to the solver.
+    // Used by the solver — pencil marks are never passed here.
     function getGrid() {
       return cellData.map(d => d.value || 0);
+    }
+
+    // For candidate checking only: also treat single pencil marks as filled,
+    // so that cells the user has tentatively narrowed down are accounted for.
+    function getGridForCandidates() {
+      return cellData.map(d => {
+        if (d.value) return d.value;
+        if (d.marks.size === 1) return [...d.marks][0];
+        return 0;
+      });
     }
 
     function setCellGiven(idx, digit) {
